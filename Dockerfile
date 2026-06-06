@@ -11,9 +11,12 @@ RUN apt-get update \
 WORKDIR /var/www/html
 
 COPY . /var/www/html
+COPY docker-entrypoint.sh /usr/local/bin/entrypoint.sh
 
-RUN chown -R www-data:www-data /var/www/html
+RUN chmod +x /usr/local/bin/entrypoint.sh \
+    && chown -R www-data:www-data /var/www/html
 
 EXPOSE 80
 
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["apache2-foreground"]
