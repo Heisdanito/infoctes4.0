@@ -4,14 +4,37 @@
 //  Uses mysqli (NOT PDO) with prepared statements
 // ============================================================
 
-define('DB_HOST', getenv('DB_HOST') ?: 'localhost');
-define('DB_USER', getenv('DB_USER') ?: 'root');
-define('DB_PASS', getenv('DB_PASS') ?: '');
-define('DB_NAME', getenv('DB_NAME') ?: 'infoctes');
-define('DB_PORT', (int) (getenv('DB_PORT') ?: 3306));
-define('DB_SSL_CA', getenv('DB_SSL_CA') ?: __DIR__ . '/aiven-ca.pem');
+$databaseUrl = getenv('DATABASE_URL') ?: getenv('MYSQL_URL') ?: '';
 
-define('DB_SSL_MODE', getenv('DB_SSL_MODE') ?: 'REQUIRED');
+if ($databaseUrl !== '') {
+    $parsed = parse_url($databaseUrl);
+    if ($parsed === false || empty($parsed['host']) || empty($parsed['path'])) {
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'message' => 'Invalid database connection URL.',
+        ]);
+        exit;
+    }
+
+    define('DB_HOST', $parsed['host']);
+    define('DB_USER', $parsed['user'] ?? 'root');
+    define('DB_PASS', $parsed['pass'] ?? '');
+    define('DB_NAME', ltrim($parsed['path'], '/'));
+    define('DB_PORT', isset($parsed['port']) ? (int) $parsed['port'] : 3306);
+
+    parse_str($parsed['query'] ?? '', $query);
+    define('DB_SSL_MODE', strtoupper($query['ssl-mode'] ?? getenv('DB_SSL_MODE') ?: 'REQUIRED'));
+    define('DB_SSL_CA', getenv('DB_SSL_CA') ?: __DIR__ . '/aiven-ca.pem');
+} else {
+    define('DB_HOST', getenv('DB_HOST') ?: 'localhost');
+    define('DB_USER', getenv('DB_USER') ?: 'root');
+    define('DB_PASS', getenv('DB_PASS') ?: '');
+    define('DB_NAME', getenv('DB_NAME') ?: 'infoctes');
+    define('DB_PORT', (int) (getenv('DB_PORT') ?: 3306));
+    define('DB_SSL_CA', getenv('DB_SSL_CA') ?: __DIR__ . '/aiven-ca.pem');
+    define('DB_SSL_MODE', getenv('DB_SSL_MODE') ?: 'REQUIRED');
+}
 
 /**
  * Returns a live mysqli connection.
