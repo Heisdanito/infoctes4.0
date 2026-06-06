@@ -3,7 +3,8 @@ FROM php:8.2-apache
 RUN apt-get update \
     && apt-get install -y --no-install-recommends libonig-dev libzip-dev zip unzip \
     && docker-php-ext-install pdo pdo_mysql mysqli mbstring zip \
-    && a2enmod rewrite \
+    && a2dismod mpm_event || true \
+    && a2enmod mpm_prefork rewrite \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /var/www/html
