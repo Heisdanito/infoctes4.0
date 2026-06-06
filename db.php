@@ -4,11 +4,14 @@
 //  Uses mysqli (NOT PDO) with prepared statements
 // ============================================================
 
-define('DB_HOST',    'localhost');
-define('DB_USER',    'root');
-define('DB_PASS',    '');
-define('DB_NAME',    'infoctes');
-// define('DB_PORT',    3306);
+define('DB_HOST', getenv('DB_HOST') ?: 'localhost');
+define('DB_USER', getenv('DB_USER') ?: 'root');
+define('DB_PASS', getenv('DB_PASS') ?: '');
+define('DB_NAME', getenv('DB_NAME') ?: 'infoctes');
+define('DB_PORT', (int) (getenv('DB_PORT') ?: 3306));
+define('DB_SSL_CA', getenv('DB_SSL_CA') ?: __DIR__ . '/aiven-ca.pem');
+
+define('DB_SSL_MODE', getenv('DB_SSL_MODE') ?: 'REQUIRED');
 
 /**
  * Returns a live mysqli connection.
@@ -18,18 +21,48 @@ function getDB(): mysqli {
 
     if ($conn !== null) return $conn;
 
-    $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
-
-    if ($conn->connect_error) {
+    $conn = mysqli_init();
+    if ($conn === false) {
         http_response_code(500);
         echo json_encode([
             'success' => false,
-            'message' => 'Database connection failed: ' . $conn->connect_error,
+            'message' => 'Failed to initialize MySQL connection.',
         ]);
         exit;
     }
 
-    $conn->set_charset('utf8mb4');
+    if (DB_SSL_MODE !== 'DISABLED') {
+        if (!file_exists(DB_SSL_CA)) {
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'SSL CA certificate not found: ' . DB_SSL_CA,
+            ]);
+            exit;
+        }
+
+        mysqli_ssl_set($conn, null, null, DB_SSL_CA, null, null);
+        mysqli_options($conn, MYSQLI_OPT_SSL_VERIFY_SERVER_CERT, true);
+    }
+
+    if (!mysqli_real_connect($conn, DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT)) {
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'message' => 'Database connection failed: ' . mysqli_connect_error(),
+        ]);
+        exit;
+    }
+
+    if (!$conn->set_charset('utf8mb4')) {
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'message' => 'Failed to set database charset: ' . $conn->error,
+        ]);
+        exit;
+    }
+
     return $conn;
 }
 
