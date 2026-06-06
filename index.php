@@ -219,4 +219,3 @@ respond(true, 'Dashboard data loaded.', [
     'timetable' => $timetable,
     'recent'    => $recentRecords,
 ]);
-?>

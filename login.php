@@ -249,4 +249,3 @@ if ($role === 'lecturer') {
 
     respond(true, 'Login successful.', ['user' => $userPayload]);
 }
-?>

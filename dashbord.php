@@ -306,5 +306,3 @@ $dashboardData = [
 ];
 
 respond(true, 'Dashboard data retrieved successfully.', $dashboardData);
-
-?>

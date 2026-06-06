@@ -109,4 +109,3 @@ function getCurrentPeriodId(mysqli $db): int {
     
     return 0;
 }
-?>

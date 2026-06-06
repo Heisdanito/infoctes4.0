@@ -427,4 +427,3 @@ if ($isCourseRep && !empty($repCourses)) {
 }
 
 respond(true, 'Profile data retrieved successfully.', $responseData);
-?>

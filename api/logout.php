@@ -23,4 +23,3 @@ if ($studentId === 0) {
 respond(true, 'Logged out successfully.', [
     'student_id' => $studentId,
 ]);
-?>
