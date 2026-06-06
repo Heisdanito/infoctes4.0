@@ -1,0 +1,112 @@
+<?php
+// ============================================================
+//  config/db.php — Database connection
+//  Uses mysqli (NOT PDO) with prepared statements
+// ============================================================
+
+define('DB_HOST',    'localhost');
+define('DB_USER',    'root');
+define('DB_PASS',    '');
+define('DB_NAME',    'infoctes');
+// define('DB_PORT',    3306);
+
+/**
+ * Returns a live mysqli connection.
+ */
+function getDB(): mysqli {
+    static $conn = null;
+
+    if ($conn !== null) return $conn;
+
+    $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
+
+    if ($conn->connect_error) {
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'message' => 'Database connection failed: ' . $conn->connect_error,
+        ]);
+        exit;
+    }
+
+    $conn->set_charset('utf8mb4');
+    return $conn;
+}
+
+/**
+ * Send a JSON response and exit.
+ */
+function respond(bool $success, string $message, array $data = [], int $code = 200): void {
+    http_response_code($code);
+    header('Content-Type: application/json');
+    echo json_encode([
+        'success' => $success,
+        'message' => $message,
+        'data'    => $data,
+    ]);
+    exit;
+}
+
+/**
+ * Start session and check if user is logged in.
+ * Returns the stored session user array.
+ */
+function requireAuth(): array {
+    // Start session if not already started
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+
+    // Debug: Log session data (remove in production)
+    error_log("Session data: " . print_r($_SESSION, true));
+
+    // Check if user is logged in
+    if (empty($_SESSION['user']) || empty($_SESSION['user']['student_id'])) {
+        respond(false, 'Unauthorized. Please log in.', [], 401);
+    }
+
+    return $_SESSION['user'];
+}
+
+/**
+ * Set the session user after successful login
+ */
+function setSessionUser(array $user): void {
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+    $_SESSION['user'] = $user;
+    error_log("Session user set: " . print_r($_SESSION['user'], true));
+}
+
+/**
+ * Check if logged in
+ */
+function isLoggedIn(): bool {
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+    return !empty($_SESSION['user']) && !empty($_SESSION['user']['student_id']);
+}
+
+/**
+ * Get current period ID
+ */
+function getCurrentPeriodId(mysqli $db): int {
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+    
+    if (isset($_SESSION['user']['period_id']) && $_SESSION['user']['period_id'] > 0) {
+        return (int) $_SESSION['user']['period_id'];
+    }
+    
+    $sql = "SELECT period_id FROM academic_period WHERE is_active = 1 LIMIT 1";
+    $result = $db->query($sql);
+    if ($result && $row = $result->fetch_assoc()) {
+        return (int) $row['period_id'];
+    }
+    
+    return 0;
+}
+?>
