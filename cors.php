@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // ============================================================
 //  cors.php — Shared CORS + session start helper
 //  Use this file in every API entrypoint before any output.
